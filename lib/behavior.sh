@@ -7,7 +7,7 @@
 # shellcheck source=common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-BEHAVIOR_VERIFIED="false"
+export BEHAVIOR_VERIFIED="false"
 
 # ── verify_exec_succeeded ─────────────────────────────────────────
 # Confirms that a kubectl exec command exited 0 and produced output.

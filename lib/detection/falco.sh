@@ -17,7 +17,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../common.sh"
 
 FALCO_NAMESPACE="${FALCO_NAMESPACE:-falco}"
 FALCO_VERIFY_TIMEOUT="${FALCO_VERIFY_TIMEOUT:-20}"
-DETECTION_RESULT="skip"
+export DETECTION_RESULT="skip"
 
 # ── Internal helpers ──────────────────────────────────────────────
 _falco_pod() {
@@ -46,6 +46,7 @@ adapter_available() {
 #
 # Sets DETECTION_RESULT=pass|fail|skip
 adapter_verify() {
+  # shellcheck disable=SC2034  # reserved for future time-correlated log filtering
   local trigger_time="${1:-0}"
   local search_pattern="${2:-}"
   local ns="${3:-k8s-replay}"

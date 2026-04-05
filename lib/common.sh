@@ -107,4 +107,4 @@ wait_for_pod() {
 # ── Scenario root detection ───────────────────────────────────────
 # When sourced, SCENARIO_DIR is the directory of the calling script
 SCENARIO_DIR="$(cd "$(dirname "${BASH_SOURCE[1]:-$0}")" && pwd)"
-MANIFESTS_DIR="${SCENARIO_DIR}/manifests"
+export MANIFESTS_DIR="${SCENARIO_DIR}/manifests"
