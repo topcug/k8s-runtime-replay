@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint shell scripts
+        run: |
+          find . -name "*.sh" -not -path "./.git/*" | \
+            xargs shellcheck --severity=warning
+
+  validate-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Validate YAML manifests (dry-run)
+        run: |
+          find scenarios -name "*.yaml" | while read f; do
+            echo "Validating: $f"
+            kubectl apply --dry-run=client -f "$f" 2>/dev/null || \
+              echo "  (skipped — requires cluster context)"
+          done

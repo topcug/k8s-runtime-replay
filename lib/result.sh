@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# lib/result.sh — result model, exit codes, and JSON output for k8s-runtime-replay
+
+# shellcheck source=common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+# ── Exit codes ────────────────────────────────────────────────────
+# 0   scenario passed, detection verified
+# 10  scenario passed, detection skipped (no backend)
+# 11  scenario passed, detection not verified
+# 20  environment/preflight failed
+# 21  deploy failed
+# 22  readiness timeout
+# 23  trigger failed
+# 24  behavior not observed
+# 30  detection backend unavailable
+# 31  detection verification misconfigured
+
+EXIT_SCENARIO_DETECTION_VERIFIED=0
+EXIT_SCENARIO_DETECTION_SKIPPED=10
+EXIT_SCENARIO_DETECTION_NOT_VERIFIED=11
+EXIT_PREFLIGHT_FAILED=20
+EXIT_DEPLOY_FAILED=21
+EXIT_READY_TIMEOUT=22
+EXIT_TRIGGER_FAILED=23
+EXIT_BEHAVIOR_NOT_OBSERVED=24
+EXIT_BACKEND_UNAVAILABLE=30
+EXIT_DETECTION_MISCONFIGURED=31
+
+# ── Result state (set by execution engine) ────────────────────────
+RESULT_SCENARIO=""
+RESULT_CONTEXT=""
+RESULT_ENVIRONMENT_CHECK="pending"
+RESULT_DEPLOY="pending"
+RESULT_READY="pending"
+RESULT_TRIGGER="pending"
+RESULT_BEHAVIOR="pending"
+RESULT_DETECTION_BACKEND="none"
+RESULT_DETECTION="pending"
+RESULT_OVERALL="pending"
+RESULT_FAILURE_REASON=""
+
+# ── result_set ────────────────────────────────────────────────────
+# Sets a single result field.
+result_set() {
+  local field="$1"
+  local value="$2"
+  eval "RESULT_${field}=\"${value}\""
+}
+
+# ── result_to_json ────────────────────────────────────────────────
+result_to_json() {
+  cat <<EOF
+{
+  "scenario": "$RESULT_SCENARIO",
+  "context": "$RESULT_CONTEXT",
+  "environment_check": "$RESULT_ENVIRONMENT_CHECK",
+  "deploy": "$RESULT_DEPLOY",
+  "ready": "$RESULT_READY",
+  "trigger": "$RESULT_TRIGGER",
+  "behavior_verification": "$RESULT_BEHAVIOR",
+  "detection_backend": "$RESULT_DETECTION_BACKEND",
+  "detection_verification": "$RESULT_DETECTION",
+  "overall": "$RESULT_OVERALL",
+  "failure_reason": "$RESULT_FAILURE_REASON"
+}
+EOF
+}
+
+# ── result_exit_code ──────────────────────────────────────────────
+result_exit_code() {
+  case "$RESULT_OVERALL" in
+    scenario_passed_detection_verified)     return $EXIT_SCENARIO_DETECTION_VERIFIED ;;
+    scenario_passed_detection_skipped)      return $EXIT_SCENARIO_DETECTION_SKIPPED ;;
+    scenario_passed_detection_not_verified) return $EXIT_SCENARIO_DETECTION_NOT_VERIFIED ;;
+    preflight_failed)                       return $EXIT_PREFLIGHT_FAILED ;;
+    deploy_failed)                          return $EXIT_DEPLOY_FAILED ;;
+    ready_timeout)                          return $EXIT_READY_TIMEOUT ;;
+    trigger_failed)                         return $EXIT_TRIGGER_FAILED ;;
+    behavior_not_observed)                  return $EXIT_BEHAVIOR_NOT_OBSERVED ;;
+    *)                                      return $EXIT_SCENARIO_DETECTION_NOT_VERIFIED ;;
+  esac
+}
