@@ -18,7 +18,7 @@ EXPECTED_DETECTION="contact to Kubernetes API server from inside container"
 SEARCH_PATTERN="K8S API"
 NAMESPACE="${REPLAY_NAMESPACE:-k8s-replay}"
 
-if [[ "${FAST:-0}" != "1" ]]; then
+if [[ "${FAST:-0}" != "1" ]] && [[ "${DRY_RUN:-0}" != "1" ]]; then
   kubectl delete pod secret-enum-target -n "$NAMESPACE" --ignore-not-found 2>/dev/null || true
 fi
 
@@ -29,6 +29,14 @@ check_falco
 result_set ENVIRONMENT_CHECK pass
 
 adapter_available && result_set DETECTION_BACKEND Falco || result_set DETECTION_BACKEND "NOT INSTALLED"
+
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  info "[dry-run] Would deploy: rbac.yaml, dummy-secret.yaml, workload.yaml"
+  info "[dry-run] Would trigger: curl https://kubernetes.default.svc/api/v1/namespaces/$NAMESPACE/secrets"
+  info "[dry-run] Would verify: API response from secret-enum-target"
+  info "[dry-run] No cluster changes made."
+  exit 0
+fi
 
 step "Deploying secret-enumeration workload"
 kubectl apply -n "$NAMESPACE" -f "${REPO_ROOT}/scenarios/secret-enumeration/manifests/rbac.yaml"

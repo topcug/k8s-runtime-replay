@@ -1,4 +1,5 @@
 id: curl-egress
+version: "0.1.0"
 title: Outbound HTTP request from container
 goal: Reproduce an unexpected outbound network connection from a running container
 safety: safe

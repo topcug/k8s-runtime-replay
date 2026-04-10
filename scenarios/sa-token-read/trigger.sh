@@ -19,7 +19,7 @@ SEARCH_PATTERN="sensitive file"
 NAMESPACE="${REPLAY_NAMESPACE:-k8s-replay}"
 TOKEN_PATH="/var/run/secrets/kubernetes.io/serviceaccount/token"
 
-if [[ "${FAST:-0}" != "1" ]]; then
+if [[ "${FAST:-0}" != "1" ]] && [[ "${DRY_RUN:-0}" != "1" ]]; then
   kubectl delete pod sa-token-read-target -n "$NAMESPACE" --ignore-not-found 2>/dev/null || true
 fi
 
@@ -30,6 +30,14 @@ check_falco
 result_set ENVIRONMENT_CHECK pass
 
 adapter_available && result_set DETECTION_BACKEND Falco || result_set DETECTION_BACKEND "NOT INSTALLED"
+
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  info "[dry-run] Would deploy: serviceaccount.yaml, workload.yaml"
+  info "[dry-run] Would trigger: kubectl exec sa-token-read-target -- sh -c 'cat /var/run/secrets/...'"
+  info "[dry-run] Would verify: token file readable at $TOKEN_PATH"
+  info "[dry-run] No cluster changes made."
+  exit 0
+fi
 
 step "Deploying sa-token-read workload"
 kubectl apply -n "$NAMESPACE" -f "${REPO_ROOT}/scenarios/sa-token-read/manifests/serviceaccount.yaml"

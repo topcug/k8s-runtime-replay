@@ -19,8 +19,8 @@ EXPECTED_DETECTION="shell execution inside a container"
 SEARCH_PATTERN="shell"
 NAMESPACE="${REPLAY_NAMESPACE:-k8s-replay}"
 
-# ── Clean state by default; reuse with FAST=1 ────────────────────
-if [[ "${FAST:-0}" != "1" ]]; then
+# ── Clean state by default; reuse with FAST=1; skip in DRY_RUN ──
+if [[ "${FAST:-0}" != "1" ]] && [[ "${DRY_RUN:-0}" != "1" ]]; then
   kubectl delete pod shell-spawn-target -n "$NAMESPACE" --ignore-not-found 2>/dev/null || true
 fi
 
@@ -38,6 +38,14 @@ else
 fi
 
 # ── Phase 2: deploy ───────────────────────────────────────────────
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  info "[dry-run] Would deploy: namespace.yaml, workload.yaml"
+  info "[dry-run] Would trigger: kubectl exec shell-spawn-target -- /bin/sh -c '...'"
+  info "[dry-run] Would verify: exec output from shell-spawn-target"
+  info "[dry-run] No cluster changes made."
+  exit 0
+fi
+
 step "Deploying shell-spawn workload"
 kubectl apply -f "${REPO_ROOT}/scenarios/shell-spawn/manifests/namespace.yaml"
 kubectl apply -n "$NAMESPACE" -f "${REPO_ROOT}/scenarios/shell-spawn/manifests/workload.yaml"

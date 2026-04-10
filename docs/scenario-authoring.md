@@ -29,6 +29,7 @@ Required fields:
 
 ```yaml
 id: <scenario-id>
+version: "0.1.0"
 title: <short human title>
 goal: <one sentence describing what this scenario reproduces>
 safety: safe
@@ -132,6 +133,18 @@ if [[ "${FAST:-0}" != "1" ]]; then
 fi
 ```
 
+Add a dry-run guard immediately before Phase 2 (deploy). This guard must come after the preflight phase so that safety checks still run:
+
+```bash
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  info "[dry-run] Would deploy: <manifest list>"
+  info "[dry-run] Would trigger: <trigger command summary>"
+  info "[dry-run] Would verify: <behavior check summary>"
+  info "[dry-run] No cluster changes made."
+  exit 0
+fi
+```
+
 ## Naming rules
 
 Scenario IDs use lowercase kebab-case: `shell-spawn`, `sa-token-read`, `curl-egress`.
@@ -202,13 +215,15 @@ Exit code 11 means the scenario succeeded. Detection not being verified does not
 
 ## Adding a new scenario — checklist
 
-- [ ] Create `scenarios/<id>/scenario.yaml` with all required fields
-- [ ] Create `scenarios/<id>/README.md` with all required sections
+- [ ] Create `scenarios/<id>/scenario.yaml` with `id`, `version`, `title`, `goal`, `safety`, `namespace`, `deploy`, `workload`, `trigger`, `behavior`, `detection`, `timeouts`, `cleanup`
+- [ ] Create `scenarios/<id>/README.md` with all required sections (Goal, Safety, What gets deployed, What gets triggered, Expected runtime evidence, Detection semantics, Known backend-specific variants, Deploy and trigger, Cleanup, Failure modes)
 - [ ] Create `scenarios/<id>/manifests/` with workload YAML
-- [ ] Create `scenarios/<id>/trigger.sh` following the 7-phase pattern
+- [ ] Create `scenarios/<id>/trigger.sh` following the 7-phase pattern with `DRY_RUN` guard
 - [ ] Create `scenarios/<id>/cleanup.sh`
-- [ ] Add `make scenario-<id>` and `make cleanup-<id>` targets to Makefile
-- [ ] Add entry to `make list-scenarios`
-- [ ] Verify: `bash -n scenarios/<id>/trigger.sh` passes
+- [ ] Add `make scenario-<id>` and `make cleanup-<id>` targets to Makefile with `DRY_RUN=$(DRY_RUN)` passed through
+- [ ] `make list-scenarios` now reads `scenario.yaml` dynamically — no manual update needed
+- [ ] Verify: `bash -n scenarios/<id>/trigger.sh` passes (syntax check)
+- [ ] Verify: `make scenario-<id> DRY_RUN=1` exits 0 and prints planned actions
 - [ ] Verify: scenario runs cleanly on a fresh kind cluster
 - [ ] Verify: `make cleanup-<id>` removes all resources
+- [ ] Verify: `make scenario-<id> JSON=1` outputs valid JSON

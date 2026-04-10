@@ -1,4 +1,4 @@
-.PHONY: help setup-kind setup-falco list-scenarios \
+.PHONY: help setup-kind setup-falco list-scenarios scenario-run cleanup-run \
 	scenario-shell-spawn scenario-sa-token-read scenario-kubectl-exec \
 	scenario-curl-egress scenario-secret-enumeration \
 	cleanup-shell-spawn cleanup-sa-token-read cleanup-kubectl-exec \
@@ -13,6 +13,7 @@ KIND_CLUSTER  ?= k8s-replay
 FALCO_NAMESPACE ?= falco
 FAST          ?= 0
 JSON          ?= 0
+DRY_RUN       ?= 0
 
 ## ── help ─────────────────────────────────────────────────────────
 help:
@@ -142,36 +143,51 @@ list-scenarios:
 	@echo ""
 	@echo "  Available scenarios:"
 	@echo ""
-	@printf "  %-28s %-40s %s\n" "SCENARIO" "BEHAVIOR" "METADATA"
-	@printf "  %-28s %-40s %s\n" "--------" "--------" "--------"
-	@printf "  %-28s %-40s %s\n" "shell-spawn"         "Shell execution inside container"            "scenarios/shell-spawn/scenario.yaml"
-	@printf "  %-28s %-40s %s\n" "sa-token-read"       "Service account token read"                  "scenarios/sa-token-read/scenario.yaml"
-	@printf "  %-28s %-40s %s\n" "kubectl-exec"        "kubectl exec audit event"                    "scenarios/kubectl-exec/scenario.yaml"
-	@printf "  %-28s %-40s %s\n" "curl-egress"         "Outbound HTTP request from container"        "scenarios/curl-egress/scenario.yaml"
-	@printf "  %-28s %-40s %s\n" "secret-enumeration"  "Kubernetes Secrets enumeration from container" "scenarios/secret-enumeration/scenario.yaml"
+	@printf "  %-28s %-52s %s\n" "SCENARIO" "GOAL" "VERSION"
+	@printf "  %-28s %-52s %s\n" "--------" "----" "-------"
+	@for dir in scenarios/*/; do \
+		yaml="$$dir/scenario.yaml"; \
+		[ -f "$$yaml" ] || continue; \
+		id=$$(grep '^id:' "$$yaml" | head -1 | sed 's/id: *//'); \
+		goal=$$(grep '^goal:' "$$yaml" | head -1 | sed 's/goal: *//'); \
+		ver=$$(grep '^version:' "$$yaml" | head -1 | sed 's/version: *//;s/"//g'); \
+		printf "  %-28s %-52s %s\n" "$$id" "$$goal" "$${ver:-—}"; \
+	done
 	@echo ""
+
+## ── generic scenario run (NAME=<scenario-id>) ────────────────────
+scenario-run:
+	@[ -n "$(NAME)" ] || { echo "[error] Usage: make scenario-run NAME=<scenario-id>"; exit 1; }
+	@[ -d "scenarios/$(NAME)" ] || { echo "[error] Scenario not found: $(NAME)"; echo "Run 'make list-scenarios' to see available scenarios."; exit 1; }
+	@FAST=$(FAST) JSON=$(JSON) DRY_RUN=$(DRY_RUN) bash scenarios/$(NAME)/trigger.sh; \
+	 code=$$?; [ $$code -le 11 ] && exit 0 || exit $$code
+
+cleanup-run:
+	@[ -n "$(NAME)" ] || { echo "[error] Usage: make cleanup-run NAME=<scenario-id>"; exit 1; }
+	@[ -f "scenarios/$(NAME)/cleanup.sh" ] || { echo "[error] Scenario not found: $(NAME)"; exit 1; }
+	@bash scenarios/$(NAME)/cleanup.sh
 
 ## ── scenarios ────────────────────────────────────────────────────
 # Exit codes 10 and 11 mean scenario passed — detection skipped or not verified.
 # These are not failures. Use || true so make does not treat them as errors.
 scenario-shell-spawn:
-	@FAST=$(FAST) JSON=$(JSON) bash scenarios/shell-spawn/trigger.sh; \
+	@FAST=$(FAST) JSON=$(JSON) DRY_RUN=$(DRY_RUN) bash scenarios/shell-spawn/trigger.sh; \
 	 code=$$?; [ $$code -le 11 ] && exit 0 || exit $$code
 
 scenario-sa-token-read:
-	@FAST=$(FAST) JSON=$(JSON) bash scenarios/sa-token-read/trigger.sh; \
+	@FAST=$(FAST) JSON=$(JSON) DRY_RUN=$(DRY_RUN) bash scenarios/sa-token-read/trigger.sh; \
 	 code=$$?; [ $$code -le 11 ] && exit 0 || exit $$code
 
 scenario-kubectl-exec:
-	@FAST=$(FAST) JSON=$(JSON) bash scenarios/kubectl-exec/trigger.sh; \
+	@FAST=$(FAST) JSON=$(JSON) DRY_RUN=$(DRY_RUN) bash scenarios/kubectl-exec/trigger.sh; \
 	 code=$$?; [ $$code -le 11 ] && exit 0 || exit $$code
 
 scenario-curl-egress:
-	@FAST=$(FAST) JSON=$(JSON) bash scenarios/curl-egress/trigger.sh; \
+	@FAST=$(FAST) JSON=$(JSON) DRY_RUN=$(DRY_RUN) bash scenarios/curl-egress/trigger.sh; \
 	 code=$$?; [ $$code -le 11 ] && exit 0 || exit $$code
 
 scenario-secret-enumeration:
-	@FAST=$(FAST) JSON=$(JSON) bash scenarios/secret-enumeration/trigger.sh; \
+	@FAST=$(FAST) JSON=$(JSON) DRY_RUN=$(DRY_RUN) bash scenarios/secret-enumeration/trigger.sh; \
 	 code=$$?; [ $$code -le 11 ] && exit 0 || exit $$code
 
 ## ── cleanup ──────────────────────────────────────────────────────

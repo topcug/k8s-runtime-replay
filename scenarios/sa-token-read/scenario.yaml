@@ -1,4 +1,5 @@
 id: sa-token-read
+version: "0.1.0"
 title: Service account token read inside container
 goal: Reproduce a service account token read from within a running container
 safety: safe

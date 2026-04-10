@@ -1,4 +1,5 @@
 id: shell-spawn
+version: "0.1.0"
 title: Shell execution inside container
 goal: Reproduce a shell process execution inside a running container
 safety: safe

@@ -81,3 +81,22 @@ result_exit_code() {
     *)                                      return $EXIT_SCENARIO_DETECTION_NOT_VERIFIED ;;
   esac
 }
+
+# ── result_fail_and_exit ──────────────────────────────────────────
+# Convenience: set overall + failure_reason, print summary, then exit.
+# Usage: result_fail_and_exit <overall_state> <failure_reason>
+result_fail_and_exit() {
+  local overall="$1"
+  local reason="$2"
+  result_set OVERALL "$overall"
+  result_set FAILURE_REASON "$reason"
+  if [[ "${JSON:-0}" == "1" ]]; then
+    result_to_json
+  else
+    # print_summary and print_detail sourced from output.sh in each trigger script
+    if declare -f print_summary &>/dev/null; then
+      print_summary
+    fi
+  fi
+  result_exit_code || exit $?
+}

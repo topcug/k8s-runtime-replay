@@ -1,4 +1,5 @@
 id: kubectl-exec
+version: "0.1.0"
 title: kubectl exec into running container
 goal: Reproduce a kubectl exec event to validate audit log and runtime detections
 safety: safe

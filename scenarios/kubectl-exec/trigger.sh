@@ -18,7 +18,7 @@ EXPECTED_DETECTION="exec or attach to container via kubectl"
 SEARCH_PATTERN="exec"
 NAMESPACE="${REPLAY_NAMESPACE:-k8s-replay}"
 
-if [[ "${FAST:-0}" != "1" ]]; then
+if [[ "${FAST:-0}" != "1" ]] && [[ "${DRY_RUN:-0}" != "1" ]]; then
   kubectl delete pod kubectl-exec-target -n "$NAMESPACE" --ignore-not-found 2>/dev/null || true
 fi
 
@@ -29,6 +29,14 @@ check_falco
 result_set ENVIRONMENT_CHECK pass
 
 adapter_available && result_set DETECTION_BACKEND Falco || result_set DETECTION_BACKEND "NOT INSTALLED"
+
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  info "[dry-run] Would deploy: workload.yaml"
+  info "[dry-run] Would trigger: kubectl exec kubectl-exec-target -- sh -c '...'"
+  info "[dry-run] Would verify: exec output from kubectl-exec-target"
+  info "[dry-run] No cluster changes made."
+  exit 0
+fi
 
 step "Deploying kubectl-exec workload"
 kubectl apply -n "$NAMESPACE" -f "${REPO_ROOT}/scenarios/kubectl-exec/manifests/workload.yaml"

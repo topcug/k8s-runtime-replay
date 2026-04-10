@@ -19,7 +19,7 @@ SEARCH_PATTERN="outbound"
 EGRESS_TARGET="${CURL_EGRESS_TARGET:-http://ifconfig.me}"
 NAMESPACE="${REPLAY_NAMESPACE:-k8s-replay}"
 
-if [[ "${FAST:-0}" != "1" ]]; then
+if [[ "${FAST:-0}" != "1" ]] && [[ "${DRY_RUN:-0}" != "1" ]]; then
   kubectl delete pod curl-egress-target -n "$NAMESPACE" --ignore-not-found 2>/dev/null || true
 fi
 
@@ -30,6 +30,14 @@ check_falco
 result_set ENVIRONMENT_CHECK pass
 
 adapter_available && result_set DETECTION_BACKEND Falco || result_set DETECTION_BACKEND "NOT INSTALLED"
+
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  info "[dry-run] Would deploy: workload.yaml"
+  info "[dry-run] Would trigger: curl $EGRESS_TARGET from inside curl-egress-target"
+  info "[dry-run] Would verify: HTTP response code from $EGRESS_TARGET"
+  info "[dry-run] No cluster changes made."
+  exit 0
+fi
 
 step "Deploying curl-egress workload"
 kubectl apply -n "$NAMESPACE" -f "${REPO_ROOT}/scenarios/curl-egress/manifests/workload.yaml"
