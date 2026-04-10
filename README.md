@@ -4,6 +4,12 @@
   <img src="k8s-runtime-replay.png" alt="k8s-runtime-replay" width="400" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/topcug/k8s-runtime-replay/actions"><img src="https://github.com/topcug/k8s-runtime-replay/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://goreportcard.com/report/github.com/topcug/k8s-runtime-replay"><img src="https://goreportcard.com/badge/github.com/topcug/k8s-runtime-replay" alt="Go Report Card"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
+</p>
+
 **k8s-runtime-replay solves the problem of having no safe, repeatable way to trigger real Kubernetes runtime behaviors for testing detections, validating rules, and running security workshops.**
 
 Instead of writing one-off scripts or guessing whether your Falco rules actually fire, you get a catalog of well-scoped scenarios — each a single `make` command that deploys a workload, triggers a real behavior, verifies it happened, checks for a detection alert, and cleans up after itself.
